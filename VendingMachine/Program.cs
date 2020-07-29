@@ -9,7 +9,8 @@ namespace VendingMachine
     /// 自動販賣機
     /// 題目來源:https://ck101.com/thread-2871312-1-1.html
     /// 參考資料:
-    /// [中英數文字混雜的截字或補空白方法[Big5版]]https://dotblogs.com.tw/wadehuang36/2010/12/03/big5_process
+    /// 中英數文字混雜的截字或補空白方法[Big5版] : https://dotblogs.com.tw/wadehuang36/2010/12/03/big5_process
+    /// C# - foreach Exception "集合已修改; 列舉作業可能尚未執行" 解決方法 : http://limitedcode.blogspot.com/2014/10/foreach-exception.html  
     /// </summary>
     class Program
     {
@@ -56,7 +57,7 @@ namespace VendingMachine
                         Console.WriteLine("結帳中...");
                         while (iCoinTotal < iTotal)
                         {
-                            Console.WriteLine("金額不足，請繼續投幣...\n輸入 0 時，表示投幣結束。");
+                            Console.WriteLine("金額不足，請繼續投幣。輸入 0 時，表示投幣結束...");
                             InsertCoins();
                         }
                         SettleAccounts();
@@ -70,6 +71,9 @@ namespace VendingMachine
        
         public static void Inititle() 
         {
+            iTotal = 0;
+            iCoinTotal = 0;
+            
             Order = new Dictionary<string, Product>() 
             {
                 {"A", new Product("可樂", 30)},
@@ -93,20 +97,18 @@ namespace VendingMachine
 
         public static void ShowData()
         {
-            int width = 10;
-            Console.WriteLine(FixedWidth("代碼", width) + FixedWidth("品名", width) + FixedWidth("單價", width, true) + FixedWidth("訂購", width, true) + FixedWidth("小計", width, true));
-            Console.WriteLine(FixedWidth("====", width) + FixedWidth("==========", width) + FixedWidth("====", width, true) + FixedWidth("====", width, true) + FixedWidth("====", width, true));
+            int width = 8;
+            Console.WriteLine(FixedWidth("代碼", 4) + "  " + FixedWidth("品名", 10, true) + FixedWidth("單價", width) + FixedWidth("訂購", width) + FixedWidth("小計", width));
+            Console.WriteLine(FixedWidth("====", 4) + "  " + FixedWidth("==========", 10, true) + FixedWidth("====", width) + FixedWidth("====", width) + FixedWidth("====", width));
             foreach (KeyValuePair<string, Product> item in Order)
             {
-                iTotal += item.Value.SubTotal;
-
                 Console.WriteLine
                 (
-                    FixedWidth(item.Key, width) +
-                    FixedWidth(item.Value.ProductName, width) +
-                    FixedWidth(item.Value.Price.ToString(), width, true) +
-                    FixedWidth(item.Value.OrderQuantity.ToString(), width, true) +
-                    FixedWidth(item.Value.SubTotal.ToString(), width, true)
+                    FixedWidth(item.Key, 4) + "  " +
+                    FixedWidth(item.Value.ProductName, 10, true) +
+                    FixedWidth(item.Value.Price.ToString(), width) +
+                    FixedWidth(item.Value.OrderQuantity.ToString(), width) +
+                    FixedWidth(item.Value.SubTotal.ToString(), width)
                 );
             }
 
@@ -120,9 +122,9 @@ namespace VendingMachine
         /// </summary>
         /// <param name="value">傳入的值</param>
         /// <param name="maxLength">欄位寬度</param>
-        /// <param name="rightAlign">指定靠左或靠右對齊，預設為否</param>
+        /// <param name="leftAlign">指定靠左或靠右對齊，預設為否</param>
         /// <returns>截字或補空白之資料字串</returns>
-        public static string FixedWidth(string value, int maxLength, bool rightAlign = false)
+        public static string FixedWidth(string value, int maxLength, bool leftAlign = false)
         {
             int padding = 0;
             var buffer = Encoding.Default.GetBytes(value);
@@ -165,7 +167,7 @@ namespace VendingMachine
 
             if (padding != 0)
             {
-                value = rightAlign ? ("".PadRight(padding) + value) : (value + "".PadRight(padding));
+                value = leftAlign ? (value + "".PadRight(padding)) : ("".PadRight(padding) + value);
             }
             
             return value;
@@ -210,6 +212,7 @@ namespace VendingMachine
                 {
                     Order[sReadkey].OrderQuantity++;
                     Order[sReadkey].SubTotal = Order[sReadkey].Price * Order[sReadkey].OrderQuantity;
+                    iTotal += Order[sReadkey].Price;
                 }
             }
             Console.WriteLine();
@@ -224,6 +227,7 @@ namespace VendingMachine
                 {
                     Order[sReadkey].OrderQuantity--;
                     Order[sReadkey].SubTotal = Order[sReadkey].Price * Order[sReadkey].OrderQuantity;
+                    iTotal -= Order[sReadkey].Price;
                 }
             }
             Console.WriteLine();
@@ -236,44 +240,46 @@ namespace VendingMachine
         {
             int width = 10;
             int iChange = iCoinTotal - iTotal;
-            Console.WriteLine("選購的商品：");
-            Console.WriteLine(FixedWidth("品名", width) + FixedWidth("訂購數量", width, true));
-            Console.WriteLine(FixedWidth("==========", width) + FixedWidth("========", width, true));
+            Console.WriteLine("選購的商品：\n");
+            Console.WriteLine(FixedWidth("品名", width, true) + FixedWidth("訂購數量", width));
+            Console.WriteLine(FixedWidth("==========", width, true) + FixedWidth("========", width));
  
             foreach (KeyValuePair<string, Product> item in Order)
             {
-                iTotal += item.Value.SubTotal;
-
-                Console.WriteLine
-                (
-                    FixedWidth(item.Value.ProductName, width) +
-                    FixedWidth(item.Value.OrderQuantity.ToString(), width, true)
-                );
+                if (item.Value.OrderQuantity != 0)
+                {
+                    Console.WriteLine
+                    (
+                        FixedWidth(item.Value.ProductName, width, true) +
+                        FixedWidth(item.Value.OrderQuantity.ToString(), width)
+                    );     
+                }
             }
+            Console.WriteLine();
 
-            foreach (KeyValuePair<int, int> item in CoinsBox)
+            foreach (KeyValuePair<int, int> item in CoinsBox.ToArray())
             {
                 CoinsBox[item.Key] = 0;
             }
 
             for (int intA = iChange; intA > 0; )
             {
-                if (iChange > 50)
+                if (intA > 50)
                 {
                     CoinsBox[50]++;
                     intA -= 50;
                 }
-                else if (iChange > 10)
+                else if (intA > 10)
                 {
                     CoinsBox[10]++;
                     intA -= 10;
                 }
-                else if (iChange > 5)
+                else if (intA > 5)
                 {
                     CoinsBox[5]++;
                     intA -= 5;
                 }
-                else if (iChange > 1)
+                else if (intA >= 1)
                 {
                     CoinsBox[1]++;
                     intA -= 1;
@@ -281,6 +287,9 @@ namespace VendingMachine
             }
 
             Console.WriteLine(string.Format("找零金額：{0} < 1元: {1}, 5元: {2}, 10元: {3}, 50元: {4} >", iChange, CoinsBox[1], CoinsBox[5], CoinsBox[10], CoinsBox[50]));
+        
+            //初始化資料
+            Inititle();
         }
     }
 
